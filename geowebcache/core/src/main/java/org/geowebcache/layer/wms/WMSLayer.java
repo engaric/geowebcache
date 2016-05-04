@@ -56,6 +56,7 @@ import org.geowebcache.mime.FormatModifier;
 import org.geowebcache.mime.MimeType;
 import org.geowebcache.mime.XMLMime;
 import org.geowebcache.util.GWCVars;
+import org.springframework.util.PropertyPlaceholderHelper;
 
 /**
  * A tile layer backed by a WMS server
@@ -227,11 +228,14 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
         }
 
         if (this.sourceHelper instanceof WMSHttpHelper) {
+            PropertyPlaceholderHelper helper = new PropertyPlaceholderHelper("${", "}");
             for (int i = 0; i < wmsUrl.length; i++) {
                 String url = wmsUrl[i];
+                url = helper.replacePlaceholders(url, System.getProperties());
                 if (!url.contains("?")) {
-                    wmsUrl[i] = url + "?";
+                    url = url + "?";
                 }
+                wmsUrl[i] = url;
             }
         }
 
