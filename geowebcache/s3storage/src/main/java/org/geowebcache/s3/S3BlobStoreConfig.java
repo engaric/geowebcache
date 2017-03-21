@@ -37,6 +37,7 @@ import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
+import org.springframework.util.PropertyPlaceholderHelper;
 
 /**
  * Plain old java object representing the configuration for an S3 blob store.
@@ -46,6 +47,8 @@ public class S3BlobStoreConfig extends BlobStoreConfig {
     static Log log = LogFactory.getLog(S3BlobStoreConfig.class);
 
     private static final long serialVersionUID = 9072751143836460389L;
+
+    private PropertyPlaceholderHelper environmentHelper = new PropertyPlaceholderHelper("${", "}");
 
     private String bucket;
 
@@ -72,6 +75,10 @@ public class S3BlobStoreConfig extends BlobStoreConfig {
     private String proxyPassword;
 
     private Boolean useGzip;
+
+    private String keyStyle = "TMS";
+
+    private String access = "public";
 
     /**
      * @return the name of the AWS S3 bucket where to store tiles
@@ -107,7 +114,7 @@ public class S3BlobStoreConfig extends BlobStoreConfig {
     }
 
     public void setAwsAccessKey(String awsAccessKey) {
-        this.awsAccessKey = awsAccessKey;
+        this.awsAccessKey = environmentHelper.replacePlaceholders(awsAccessKey, System.getProperties());
     }
 
     public String getAwsSecretKey() {
@@ -115,7 +122,7 @@ public class S3BlobStoreConfig extends BlobStoreConfig {
     }
 
     public void setAwsSecretKey(String awsSecretKey) {
-        this.awsSecretKey = awsSecretKey;
+        this.awsSecretKey = environmentHelper.replacePlaceholders(awsSecretKey, System.getProperties());
     }
 
     /**
@@ -284,6 +291,42 @@ public class S3BlobStoreConfig extends BlobStoreConfig {
     public void setUseGzip(Boolean use) {
         this.useGzip = use;
     }
+
+    /**
+     * Checks key type
+     *
+     * @return TMS or S3 style
+     */
+    public String getKeyStyle() {
+        return keyStyle;
+    }
+
+    /**
+     * Sets whether key style should be TMS or S3
+     *
+     * @param keyStyle whether key is TMS style or S3 optimised
+     */
+    public void setKeyStyle(String keyStyle) {
+        this.keyStyle = keyStyle;
+    }
+    /**
+     * Checks access type
+     *
+     * @return public or private access
+     */
+    public String getAccess() {
+        return access;
+    }
+
+    /**
+     * Sets whether access should be private or public
+     *
+     * @param access whether access is private or public
+     */
+    public void setAccess(String access) {
+        this.access = access;
+    }
+
 
     @Override
     public boolean equals(Object o) {

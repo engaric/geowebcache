@@ -31,7 +31,7 @@ import org.geowebcache.storage.blobstore.file.FilePathGenerator;
 
 import com.google.common.base.Throwables;
 
-final class TMSKeyBuilder {
+final class TMSKeyBuilder implements KeyBuilder {
 
     /**
      * Key format, comprised of

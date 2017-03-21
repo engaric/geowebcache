@@ -89,6 +89,8 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
 
     private String proxyUrl;
 
+    private Boolean emptyInvalid=Boolean.FALSE;
+
     // Not used, should be removed through XSL
     @SuppressWarnings("unused")
     private Boolean tiled;
@@ -515,7 +517,7 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
         ByteArrayResource buffer = getImageBuffer(WMS_BUFFER);
         sourceHelper.makeRequest(tile, buffer);
 
-        if (tile.getError() || buffer.getSize() == 0) {
+        if (tile.getError() || (buffer.getSize() == 0  && isEmptyInvalid()) {
             throw new GeoWebCacheException("Empty tile, error message: " + tile.getErrorMessage());
         }
 
@@ -712,6 +714,11 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
 
     public String getProxyUrl() {
         return proxyUrl;
+    }
+
+    public boolean isEmptyInvalid() {
+        log.info("IsEmpty Invalid" + emptyInvalid);
+        return emptyInvalid!=null?emptyInvalid:false;
     }
 
     /**

@@ -63,6 +63,21 @@ public class StaxGeoRSSReaderTest extends TestCase {
         assertTrue(entries.get(2).getWhere() instanceof Point);
     }
 
+    public void testParseCOU27700Feed() throws Exception {
+
+        Reader feed = reader("cou_rss_feed.xml");
+        StaxGeoRSSReader reader = new StaxGeoRSSReader(feed);
+
+        List<Entry> entries = read(reader);
+
+        assertEquals(1, entries.size());
+        assertRequiredMembers(entries);
+
+        Geometry where = entries.get(0).getWhere();
+        System.out.println(where.toString());
+        assertTrue(where instanceof Polygon);
+    }
+
     public void testMultiGeometryTypesFeed() throws Exception {
 
         Reader feed = reader("mixedgeometries_feed.xml");

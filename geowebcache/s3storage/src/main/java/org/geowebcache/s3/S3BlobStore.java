@@ -75,10 +75,11 @@ public class S3BlobStore implements BlobStore {
     static Log log = LogFactory.getLog(S3BlobStore.class);
 
     private final BlobStoreListenerList listeners = new BlobStoreListenerList();
+    private final CannedAccessControlList accessControlList;
 
     private AmazonS3Client conn;
 
-    private final TMSKeyBuilder keyBuilder;
+    private final KeyBuilder keyBuilder;
 
     private String bucketName;
 
@@ -92,11 +93,19 @@ public class S3BlobStore implements BlobStore {
         checkNotNull(layers);
         checkNotNull(config.getAwsAccessKey(), "Access key not provided");
         checkNotNull(config.getAwsSecretKey(), "Secret key not provided");
-
+        String access = config.getAccess();
+        if(access.equalsIgnoreCase("private")) {
+            accessControlList = CannedAccessControlList.BucketOwnerFullControl;
+        } else {
+            accessControlList = CannedAccessControlList.PublicRead;
+        }
         this.bucketName = config.getBucket();
         String prefix = config.getPrefix() == null ? "" : config.getPrefix();
-        this.keyBuilder = new TMSKeyBuilder(prefix, layers);
-
+        if(config.getKeyStyle().equalsIgnoreCase("S3")) {
+            this.keyBuilder = new S3KeyBuilder(prefix, layers);
+        } else {
+            this.keyBuilder = new TMSKeyBuilder(prefix, layers);
+        }
         conn = config.buildClient();
 
         try {
@@ -164,31 +173,37 @@ public class S3BlobStore implements BlobStore {
             existed = oldObj != null;
         }
 
-        final ByteArrayInputStream input = toByteArray(blob);
-        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, key, input,
-                objectMetadata).withCannedAcl(CannedAccessControlList.PublicRead);
+        try {
+            final ByteArrayInputStream input = toByteArray(blob);
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, key, input,
+                    objectMetadata).withCannedAcl(accessControlList);
 
-        log.trace(log.isTraceEnabled() ? ("Storing " + key) : "");
-        s3Ops.putObject(putObjectRequest);
+            log.trace(log.isTraceEnabled() ? ("Storing " + key) : "");
+            s3Ops.putObject(putObjectRequest);
 
         /*
          * This is important because listeners may be tracking tile existence
          */
-        if (!listeners.isEmpty()) {
-            if (existed) {
-                long oldSize = oldObj.getContentLength();
-                listeners.sendTileUpdated(obj, oldSize);
-            } else {
-                listeners.sendTileStored(obj);
+            if (!listeners.isEmpty()) {
+                if (existed) {
+                    long oldSize = oldObj.getContentLength();
+                    listeners.sendTileUpdated(obj, oldSize);
+                } else {
+                    listeners.sendTileStored(obj);
+                }
             }
+        } catch (NullPointerException npe) {
+            log.info("Caught NPE", npe);
         }
     }
 
     private ByteArrayInputStream toByteArray(final Resource blob) throws StorageException {
-        final byte[] bytes;
+        byte[] bytes;
         if (blob instanceof ByteArrayResource) {
+            log.info("ByteArrayResource");
             bytes = ((ByteArrayResource) blob).getContents();
         } else {
+            log.info("Not ByteArrayResource");
             ByteArrayOutputStream out = new ByteArrayOutputStream((int) blob.getSize());
             WritableByteChannel channel = Channels.newChannel(out);
             try {
@@ -196,9 +211,17 @@ public class S3BlobStore implements BlobStore {
             } catch (IOException e) {
                 throw new StorageException("Error copying blob contents", e);
             }
-            bytes = out.toByteArray();
+            if(out!=null) {
+                bytes = out.toByteArray();
+            } else {
+                bytes = new byte[0];
+            }
+        }
+        if(null==bytes) {
+            bytes = new byte[0];
         }
         ByteArrayInputStream input = new ByteArrayInputStream(bytes);
+        log.info("Input:" + input);
         return input;
     }
 

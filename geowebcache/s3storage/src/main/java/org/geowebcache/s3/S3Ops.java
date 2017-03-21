@@ -64,7 +64,7 @@ class S3Ops {
 
     private final String bucketName;
 
-    private final TMSKeyBuilder keyBuilder;
+    private final KeyBuilder keyBuilder;
 
     private final LockProvider locks;
 
@@ -72,7 +72,7 @@ class S3Ops {
 
     private Map<String, Long> pendingDeletesKeyTime = new ConcurrentHashMap<>();
 
-    public S3Ops(AmazonS3Client conn, String bucketName, TMSKeyBuilder keyBuilder,
+    public S3Ops(AmazonS3Client conn, String bucketName, KeyBuilder keyBuilder,
             LockProvider locks) throws StorageException {
         this.conn = conn;
         this.bucketName = bucketName;

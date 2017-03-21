@@ -108,7 +108,7 @@ public class WMSHttpHelper extends WMSSourceHelper {
         final Integer backendTimeout = layer.getBackendTimeout();
         int backendTries = 0; // keep track of how many backends we have tried
         GeoWebCacheException fetchException = null;
-        while (target.getSize() == 0 && backendTries < layer.getWMSurl().length) {
+        while (target.getSize() == 0 && !layer.isEmptyInvalid() && backendTries < layer.getWMSurl().length) {
             String requestUrl = layer.nextWmsURL();
 
             try {
@@ -127,7 +127,7 @@ public class WMSHttpHelper extends WMSSourceHelper {
             backendTries++;
         }
 
-        if (target.getSize() == 0) {
+        if (target.getSize() == 0  && layer.isEmptyInvalid()) {
             String msg = "All backends (" + backendTries + ") failed.";
             if (fetchException != null) {
                 msg += " Reason: " + fetchException.getMessage() + ". ";
