@@ -131,10 +131,11 @@ public class JDBCQuotaStoreFactory implements QuotaStoreFactory, ApplicationCont
     private QuotaStore getJDBCStore(DefaultStorageFinder cacheDirFinder,
             TilePageCalculator tilePageCalculator, JDBCConfiguration config)
             throws ConfigurationException {
-        DataSource ds = getDataSource(config);
+        JDBCConfiguration expandedConfig = config.clone(true);
+        DataSource ds = getDataSource(expandedConfig);
         
         // prepare the dialect
-        String dialectName = config.getDialect();
+        String dialectName = expandedConfig.getDialect();
         String dialectBeanName = dialectName + "QuotaDialect";
         Object bean = appContext.getBean(dialectBeanName);
         
@@ -153,6 +154,8 @@ public class JDBCQuotaStoreFactory implements QuotaStoreFactory, ApplicationCont
         JDBCQuotaStore store = new JDBCQuotaStore(cacheDirFinder, tilePageCalculator);
         store.setDataSource(ds);
         store.setDialect(dialect);
+        // sets schema if configured in geowebcache-diskquota-jdbc.xml
+        store.setSchema(expandedConfig.getSchema());
 
         // initialize it
         store.initialize();

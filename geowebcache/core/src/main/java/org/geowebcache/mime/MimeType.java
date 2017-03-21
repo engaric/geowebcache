@@ -17,8 +17,11 @@
  */
 package org.geowebcache.mime;
 
+import java.io.IOException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.geowebcache.io.Resource;
 
 public class MimeType {
     protected String mimeType;
@@ -51,6 +54,15 @@ public class MimeType {
      * @return
      */
     public String getMimeType() {
+        return mimeType;
+    }
+    
+    /**
+     * The MIME identifier string for this format.
+     * @return
+     * @throws IOException 
+     */
+    public String getMimeType(Resource resource) throws IOException {
         return mimeType;
     }
     
@@ -181,5 +193,22 @@ public class MimeType {
     
     public int hashCode() {
         return format.hashCode();
+    }
+
+    /**
+     * Determine whether otherMimeType is compatible with this MimeType. They're compatible if
+     * they're identical, or presumably if otherMimeType has this mime type as a prefix.
+     * @param otherMimeType the mime type to check for compatibility
+     * @return whether otherMimeType is "compatible" with this mime type
+     */
+    public boolean isCompatible(String otherMimeType) {
+        return mimeType.equalsIgnoreCase(otherMimeType) ||
+            (otherMimeType != null &&
+                otherMimeType.toLowerCase().startsWith(mimeType.toLowerCase()));
+    }
+    
+    @Override
+    public String toString() {
+        return mimeType;
     }
 }

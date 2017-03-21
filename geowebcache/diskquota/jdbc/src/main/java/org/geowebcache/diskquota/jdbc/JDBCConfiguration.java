@@ -25,12 +25,13 @@ import java.io.OutputStream;
 import java.io.Serializable;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.SerializationUtils;
+import org.geowebcache.GeoWebCacheEnvironment;
+import org.geowebcache.GeoWebCacheExtensions;
 import org.geowebcache.config.ConfigurationException;
 import org.geowebcache.io.GeoWebCacheXStream;
 
 import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.security.NoTypePermission;
-import com.thoughtworks.xstream.security.PrimitiveTypePermission;
 
 /**
  * A JDBC configuration for the GeoWebCache disk quota subsystem
@@ -42,6 +43,11 @@ public class JDBCConfiguration implements Serializable {
     String dialect;
 
     String JNDISource;
+
+    /**
+     * To be able configure schema in geowebcache-diskquota-jdbc.xml
+     */
+    String schema;
 
     ConnectionPoolConfiguration connectionPool;
 
@@ -78,7 +84,8 @@ public class JDBCConfiguration implements Serializable {
         XStream xs = getXStream();
 
         JDBCConfiguration conf = (JDBCConfiguration) xs.fromXML(is);
-        validateConfiguration(conf);
+        
+        validateConfiguration(conf.clone(true));
         return conf;
     }
 
@@ -142,6 +149,14 @@ public class JDBCConfiguration implements Serializable {
 
     public void setJNDISource(String jndiSource) {
         this.JNDISource = jndiSource;
+    }
+
+    public String getSchema() {
+        return schema;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
     }
 
     public ConnectionPoolConfiguration getConnectionPool() {
@@ -369,4 +384,34 @@ public class JDBCConfiguration implements Serializable {
 
     }
 
+    /**
+     * 
+     * 
+     * @param allowEnvParametrization
+     * @return
+     */
+    public JDBCConfiguration clone(boolean allowEnvParametrization) {
+        
+        JDBCConfiguration conf = (JDBCConfiguration) SerializationUtils.clone(this);
+        
+        final GeoWebCacheEnvironment gwcEnvironment = GeoWebCacheExtensions.bean(GeoWebCacheEnvironment.class);
+        
+        if (allowEnvParametrization &&  gwcEnvironment != null && GeoWebCacheEnvironment.ALLOW_ENV_PARAMETRIZATION) {
+            conf.setDialect((String) gwcEnvironment.resolveValue(getDialect()));
+            conf.setJNDISource((String) gwcEnvironment.resolveValue(getJNDISource()));
+            ConnectionPoolConfiguration connectionPoolConfig = getConnectionPool();
+            if (connectionPoolConfig != null) {
+                ConnectionPoolConfiguration expConnectionPoolConfig = (ConnectionPoolConfiguration) SerializationUtils.clone(connectionPoolConfig);
+                expConnectionPoolConfig.setDriver((String) gwcEnvironment.resolveValue(connectionPoolConfig.getDriver()));
+                expConnectionPoolConfig.setUrl((String) gwcEnvironment.resolveValue(connectionPoolConfig.getUrl()));
+                expConnectionPoolConfig.setUsername((String) gwcEnvironment.resolveValue(connectionPoolConfig.getUsername()));
+                expConnectionPoolConfig.setPassword((String) gwcEnvironment.resolveValue(connectionPoolConfig.getPassword()));
+                expConnectionPoolConfig.setValidationQuery((String) gwcEnvironment.resolveValue(connectionPoolConfig.getValidationQuery()));
+                
+                conf.setConnectionPool(expConnectionPoolConfig);
+            }
+        }
+        
+        return conf;
+    }
 }
