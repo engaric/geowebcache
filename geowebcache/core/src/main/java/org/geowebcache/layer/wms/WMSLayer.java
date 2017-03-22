@@ -517,7 +517,7 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
         ByteArrayResource buffer = getImageBuffer(WMS_BUFFER);
         sourceHelper.makeRequest(tile, buffer);
 
-        if (tile.getError() || (buffer.getSize() == 0  && isEmptyInvalid()) {
+        if (tile.getError() || (buffer.getSize() == 0  && isEmptyInvalid())) {
             throw new GeoWebCacheException("Empty tile, error message: " + tile.getErrorMessage());
         }
 
